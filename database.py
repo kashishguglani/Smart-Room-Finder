@@ -1117,11 +1117,7 @@ def repair_piet_default_periods():
 # RUN THIS FILE DIRECTLY
 # =========================================================
 
+
 if __name__ == "__main__":
     init_multi_college_schema()
     print("Database initialized successfully.")
-    print("Default college: PIET")
-    print("Default demo accounts:")
-    print("  student / REDACTED")
-    print("  teacher / REDACTED")
-    print("  admin   / REDACTED")
