@@ -3,6 +3,7 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from werkzeug.security import check_password_hash, generate_password_hash
+import os
 
 # =========================================================
 # DATABASE CONFIGURATION
@@ -497,44 +498,46 @@ def init_db():
 
 
 def init_users_table():
+    """
+    Ensure the users table exists and optionally bootstrap the PIET admin.
+    Existing users and passwords are never deleted or overwritten.
+    """
     init_colleges_table()
 
     with database_connection() as conn:
-        college_rows = conn.execute("""
-            SELECT id, code FROM colleges
-        """).fetchall()
+        college_rows = conn.execute(
+            "SELECT id, code FROM colleges"
+        ).fetchall()
 
         for college in college_rows:
-            college_id = college["id"]
-            college_code = college["code"]
+            if college["code"] != "PIET":
+                continue
 
-            demo_users = [
-                ("student", "REDACTED", "student"),
-                ("teacher", "REDACTED", "teacher"),
-            ]
+            # Fresh deployments can create the initial PIET admin through
+            # environment variables. Existing PIET accounts remain untouched.
+            admin_username = (os.environ.get("INITIAL_ADMIN_USERNAME") or "").strip()
+            admin_password = os.environ.get("INITIAL_ADMIN_PASSWORD") or ""
 
-            # Keep the original PIET demo admin account.
-            if college_code == "PIET":
-                demo_users.append(("admin", "REDACTED", "admin"))
+            if not admin_username or not admin_password:
+                continue
 
-            for username, password, role in demo_users:
-                exists = conn.execute("""
-                    SELECT id FROM users
-                    WHERE username = ? AND college_id = ?
-                """, (username, college_id)).fetchone()
+            exists = conn.execute(
+                "SELECT id FROM users WHERE username = ? AND college_id = ?",
+                (admin_username, college["id"]),
+            ).fetchone()
 
-                if not exists:
-                    conn.execute("""
-                        INSERT INTO users (
-                            username, password, role, college_id
-                        )
-                        VALUES (?, ?, ?, ?)
-                    """, (
-                        username,
-                        generate_password_hash(password),
-                        role,
-                        college_id
-                    ))
+            if not exists:
+                conn.execute(
+                    """
+                    INSERT INTO users (username, password, role, college_id)
+                    VALUES (?, ?, 'admin', ?)
+                    """,
+                    (
+                        admin_username,
+                        generate_password_hash(admin_password),
+                        college["id"],
+                    ),
+                )
 
 
 def init_timetable_table():
@@ -857,12 +860,6 @@ def register_college(name, code, username, password):
             "hyphens or underscores."
         )
 
-    if username.lower() in ("student", "teacher"):
-        raise ValueError(
-            "Please choose a different admin username. "
-            "'student' and 'teacher' are reserved demo accounts."
-        )
-
     with database_connection() as conn:
         existing = conn.execute("""
             SELECT id FROM colleges
@@ -890,23 +887,6 @@ def register_college(name, code, username, password):
             generate_password_hash(password),
             college_id
         ))
-
-        # Create student and teacher demo accounts for this college.
-        demo_users = [
-            ("student", "REDACTED", "student"),
-            ("teacher", "REDACTED", "teacher"),
-        ]
-
-        for demo_username, demo_password, role in demo_users:
-            conn.execute("""
-                INSERT INTO users (username, password, role, college_id)
-                VALUES (?, ?, ?, ?)
-            """, (
-                demo_username,
-                generate_password_hash(demo_password),
-                role,
-                college_id
-            ))
 
         return {
             "college_id": college_id,
