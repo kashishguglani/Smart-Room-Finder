@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Room Finder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <div class="login-logo">
+                <span class="login-logo-dot"></span>
+                <span id="collegeLogoText">PIET</span>
+            </div>
+
+            <p class="login-eyebrow" id="loginDepartmentLabel">
+    College-specific department
+</p>
+            <h1>Smart Room Finder</h1>
+            <p class="login-subtitle">Login to check classroom and laboratory availability.</p>
+
+            <div class="login-field">
+                <label for="loginCollegeCode">College Code</label>
+                <input type="text" id="loginCollegeCode" placeholder="Enter college code (e.g. PIET)" value="PIET" autocomplete="organization">
+            </div>
+
+            <div class="login-field">
+                <label for="loginUsername">Username</label>
+                <input type="text" id="loginUsername" placeholder="Enter username" autocomplete="username">
+            </div>
+
+            <div class="login-field">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="current-password">
+            </div>
+
+            <button type="button" id="loginBtn" class="login-btn">Login</button>
+            <p id="loginMessage" class="login-message" aria-live="polite"></p>
+
+            
+
+            <!-- COLLEGE REGISTRATION -->
+            <div class="college-registration">
+                <button type="button" id="showRegistrationBtn" class="secondary-btn" style="width:100%;margin-top:18px;">
+                    Register Your College
+                </button>
+
+                <div id="collegeRegistrationForm" style="display:none;margin-top:20px;">
+                    <h3>Register Your College</h3>
+                    <p class="login-subtitle">Create a separate Smart Room Finder space for your college.</p>
+
+                    <div class="login-field">
+                        <label for="registerCollegeName">College Name</label>
+                        <input type="text" id="registerCollegeName" placeholder="Enter full college name">
+                    </div>
+
+                    <div class="login-field">
+                        <label for="registerCollegeCode">College Code</label>
+                        <input type="text" id="registerCollegeCode" placeholder="e.g. ABC_COLLEGE" autocomplete="off">
+                    </div>
+
+                    <div class="login-field">
+                        <label for="registerAdminUsername">Admin Username</label>
+                        <input type="text" id="registerAdminUsername" placeholder="Choose an admin username" autocomplete="username">
+                    </div>
+
+                    <div class="login-field">
+                        <label for="registerAdminPassword">Admin Password</label>
+                        <input type="password" id="registerAdminPassword" placeholder="At least 8 characters" autocomplete="new-password">
+                    </div>
+
+                    <button type="button" id="registerCollegeBtn" class="login-btn">Create College</button>
+                    <p id="registrationMessage" class="login-message" aria-live="polite"></p>
+
+                    <button type="button" id="hideRegistrationBtn" class="secondary-btn" style="width:100%;margin-top:10px;">
+                        Back to Login
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN ROOM FINDER -->
+    <div id="appScreen" class="container" style="display:none;">
+
+        <header class="header">
+            <div>
+                <p class="eyebrow" id="collegeHeaderLabel">PIET · Smart Room Finder</p>
+                <h1>Smart Room Finder</h1>
+                <p class="subtitle">Find available classrooms and laboratories based on the timetable.</p>
+            </div>
+
+            <div class="header-right">
+                <button type="button" id="adminPanelBtn" class="admin-panel-btn" style="display:none;">
+                    ⚙ Admin Panel
+                </button>
+
+                <div id="userBadge" class="user-badge">
+                    <span id="userRole">Student</span>
+                    <strong id="userName">User</strong>
+                </div>
+
+                <button type="button" id="logoutBtn" class="logout-btn">Logout</button>
+
+                <div class="header-badge">
+                    <span class="status-dot"></span>
+                    Room Availability
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTROLS -->
+        <section class="control-card">
+            <div class="control-group">
+                <label for="day">Day</label>
+                <select id="day"></select>
+            </div>
+
+            <div class="control-group">
+                <label for="period">Time</label>
+                <select id="period"></select>
+            </div>
+
+            <button type="button" id="nowBtn" class="primary-btn">Use Current Time</button>
+        </section>
+
+        <!-- FILTERS -->
+        <section class="filter-card">
+            <div class="filter-left">
+                <button type="button" class="filter-btn active" data-filter="all">All</button>
+                <button type="button" class="filter-btn" data-filter="Classroom">Classrooms</button>
+                <button type="button" class="filter-btn" data-filter="Lab">Labs</button>
+            </div>
+
+            <button type="button" id="freeOnly" class="free-filter-btn">
+                <span class="filter-icon">✓</span>
+                Free Only
+            </button>
+        </section>
+
+        <section id="summary" class="summary"></section>
+
+        <!-- LEGEND -->
+        <section class="legend">
+            <div class="legend-item"><span class="legend-dot free"></span>Free</div>
+            <div class="legend-item"><span class="legend-dot busy"></span>In Class</div>
+            <div class="legend-item"><span class="legend-dot teacher"></span>Teacher Occupied</div>
+        </section>
+
+        <!-- ROOM GRID -->
+        <main>
+            <div id="roomGrid" class="room-grid"></div>
+        </main>
+
+        <footer>
+    <p id="timetableFooterLabel">Timetable</p>
+    <p>Room updates are stored on the server.</p>
+</footer>
+
+        <!-- ADMIN PANEL -->
+        <section id="adminPanel" class="admin-panel" style="display:none;">
+            <div class="admin-panel-header">
+                <div>
+                    <p class="admin-eyebrow">ADMINISTRATION</p>
+                    <h2>User Management</h2>
+                    <p>Create and manage Smart Room Finder accounts.</p>
+                </div>
+
+                <button type="button" id="closeAdminPanel" class="admin-close-btn">Close</button>
+            </div>
+
+            <!-- TIMETABLE MANAGEMENT -->
+            <div class="admin-card timetable-admin-card">
+                <div class="users-header">
+                    <h3>Timetable Management</h3>
+                    <button type="button" id="refreshTimetableBtn" class="refresh-users-btn">↻ Refresh</button>
+                </div>
+
+                <div class="admin-form timetable-form">
+                    <div class="admin-field">
+                        <label for="adminDay">Day</label>
+                        <select id="adminDay">
+                            <option value="0">Monday</option>
+                            <option value="1">Tuesday</option>
+                            <option value="2">Wednesday</option>
+                            <option value="3">Thursday</option>
+                            <option value="4">Friday</option>
+                            <option value="5">Saturday</option>
+                        </select>
+                    </div>
+
+                    <div class="admin-field">
+                        <label for="adminPeriod">Period</label>
+                        <select id="adminPeriod">
+                            <option value="0">Period 1</option>
+                            <option value="1">Period 2</option>
+                            <option value="2">Period 3</option>
+                            <option value="3">Period 4</option>
+                            <option value="4">Period 5</option>
+                            <option value="5">Period 6</option>
+                            <option value="6">Period 7</option>
+                            <option value="7">Period 8</option>
+                        </select>
+                    </div>
+
+                    <div class="admin-field">
+                        <label for="adminRoom">Room</label>
+                        <select id="adminRoom">
+                            <option value="">Loading rooms...</option>
+                        </select>
+                    </div>
+
+                    <div class="admin-field">
+                        <label for="adminSection">Section</label>
+                        <input id="adminSection" placeholder="e.g. 3A">
+                    </div>
+
+                    <div class="admin-field">
+                        <label for="adminSubject">Subject</label>
+                        <input id="adminSubject" placeholder="e.g. Data Structures">
+                    </div>
+
+                    <div class="admin-field">
+                        <label for="adminTeacher">Teacher</label>
+                        <input id="adminTeacher" placeholder="e.g. Dr. Sharma">
+                    </div>
+
+                    <button type="button" id="saveTimetableBtn" class="admin-create-btn">Save Timetable</button>
+                </div>
+
+                <p id="timetableAdminMessage" class="admin-message"></p>
+                                <div id="adminTimetableTable" class="users-table"></div>
+            </div>
+<!-- CUSTOMIZABLE TIMETABLE PERIOD SETTINGS -->
+<div class="admin-card timetable-period-settings">
+    <div class="users-header">
+        <h3>Timetable Period Settings</h3>
+        <button
+            type="button"
+            id="loadPeriodSettingsBtn"
+            class="refresh-users-btn"
+        >
+            ↻ Load Settings
+        </button>
+    </div>
+
+    <p>
+        Leave the section field empty to configure the college-wide
+        default schedule. Enter a section such as 3A to customize it.
+    </p>
+
+    <div class="admin-form">
+        <div class="admin-field">
+            <label for="periodSettingsSection">
+                Section (optional)
+            </label>
+            <input
+                type="text"
+                id="periodSettingsSection"
+                placeholder="Leave blank for college-wide settings"
+            >
+        </div>
+    </div>
+
+    <div
+        id="periodSettingsRows"
+        class="period-settings-rows"
+    ></div>
+
+    <div class="period-settings-actions">
+        <button
+            type="button"
+            id="addPeriodSettingBtn"
+            class="secondary-btn"
+        >
+            + Add Period
+        </button>
+
+        <button
+            type="button"
+            id="savePeriodSettingsBtn"
+            class="admin-create-btn"
+        >
+            Save Period Settings
+        </button>
+    </div>
+
+    <p
+        id="periodSettingsMessage"
+        class="admin-message"
+        aria-live="polite"
+    ></p>
+</div>
+
+<!-- COLLEGE SETTINGS -->
+<div class="admin-card">
+    <h3>College Settings</h3>
+    <p>Customize the details displayed for your college.</p>
+
+    <div class="admin-form">
+        <div class="admin-field">
+            <label for="collegeDepartment">Department</label>
+            <input
+                id="collegeDepartment"
+                type="text"
+                placeholder="e.g. CSE (AI & ML)"
+            >
+        </div>
+
+        <div class="admin-field">
+            <label for="collegeSemester">Semester</label>
+            <input
+                id="collegeSemester"
+                type="text"
+                placeholder="e.g. Odd Semester"
+            >
+        </div>
+
+        <div class="admin-field">
+            <label for="collegeAcademicYear">Academic Year</label>
+            <input
+                id="collegeAcademicYear"
+                type="text"
+                placeholder="e.g. 2026–27"
+            >
+        </div>
+
+        <button
+            type="button"
+            id="saveCollegeSettingsBtn"
+            class="admin-create-btn"
+        >
+            Save College Settings
+        </button>
+    </div>
+
+    <p
+        id="collegeSettingsMessage"
+        class="admin-message"
+        aria-live="polite"
+    ></p>
+</div
+
+            <-- CREATE USER -->
+            <div class="admin-card">
+                <h3>Create New User</h3>
+
+                <div class="admin-form">
+                    <div class="admin-field">
+                        <label for="newUsername">Username</label>
+                        <input id="newUsername" type="text" placeholder="Enter username">
+                    </div>
+
+                    <div class="admin-field">
+                        <label for="newPassword">Password</label>
+                        <input id="newPassword" type="password" placeholder="Enter password">
+                    </div>
+
+                    <div class="admin-field">
+                        <label for="newRole">Role</label>
+                        <select id="newRole">
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+
+                    <button type="button" id="createUserBtn" class="admin-create-btn">
+                        Create User
+                    </button>
+                </div>
+
+                <p id="adminMessage" class="admin-message"></p>
+            </div>
+
+            <!-- REGISTERED USERS -->
+            <div class="admin-card">
+                <div class="users-header">
+                    <h3>Registered Users</h3>
+                    <button type="button" id="refreshUsersBtn" class="refresh-users-btn">
+                        ↻ Refresh
+                    </button>
+                </div>
+
+                <div id="usersTable" class="users-table"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ROOM DETAILS DIALOG -->
+    <dialog id="roomDialog">
+        <div class="dialog-header">
+            <div>
+                <p class="dialog-label">ROOM DETAILS</p>
+                <h2 id="dialogRoomNumber">Room</h2>
+            </div>
+            <button type="button" id="closeDialog" class="close-btn">×</button>
+        </div>
+
+        <div id="dialogStatus" class="dialog-status"></div>
+
+        <div>
+            <h3>Today's Schedule</h3>
+            <div id="periodStrip" class="period-strip"></div>
+        </div>
+
+        <div class="teacher-input">
+            <label for="teacherName">Teacher name</label>
+            <input type="text" id="teacherName" placeholder="e.g. Ms. Sharma">
+        </div>
+
+        <div id="roomActions" class="room-actions"></div>
+
+        <button type="button" id="dialogCloseBottom" class="secondary-btn">
+            Close
+        </button>
+    </dialog>
+
+    <!-- LOGIN AND COLLEGE REGISTRATION -->
+    <script>
+        let loggedInUser = null;
+        window.getLoggedInUser = () => loggedInUser;
+
+        const byId = id => document.getElementById(id);
+
+        function showLogin() {
+            byId("loginScreen").style.display = "flex";
+            byId("appScreen").style.display = "none";
+        }
+
+        function showApp() {
+            byId("loginScreen").style.display = "none";
+            byId("appScreen").style.display = "block";
+
+            if (loggedInUser) {
+                byId("userName").textContent = loggedInUser.username || "User";
+                byId("userRole").textContent =
+                    (loggedInUser.role || "student").toUpperCase();
+
+                const collegeName =
+                    loggedInUser.college_name ||
+                    loggedInUser.college ||
+                    byId("loginCollegeCode").value.trim() ||
+                    "Smart Room Finder";
+
+                byId("collegeHeaderLabel").textContent =
+                    collegeName + " · Smart Room Finder";
+
+                byId("collegeLogoText").textContent = collegeName;
+            }
+
+            updateAdminAccess();
+if (typeof window.loadCollegeDisplaySettings === "function") {
+    window.loadCollegeDisplaySettings();
+}
+            if (typeof initializeApp === "function") {
+                initializeApp();
+            }
+        }
+
+        function updateAdminAccess() {
+            const isAdmin = Boolean(
+                loggedInUser && loggedInUser.role === "admin"
+            );
+
+            byId("adminPanelBtn").style.display =
+                isAdmin ? "inline-flex" : "none";
+
+            if (!isAdmin) {
+                byId("adminPanel").style.display = "none";
+            }
+        }
+
+        async function checkLogin() {
+            try {
+                const response = await fetch("/api/me", {
+                    cache: "no-store"
+                });
+                const data = await response.json();
+
+                if (data.logged_in && data.user) {
+                    loggedInUser = {
+    ...data.user,
+    college_name: data.college?.name || data.user.college_name || ""
+};
+
+message.textContent = "";
+showApp();
+                } else {
+                    loggedInUser = null;
+                    showLogin();
+                }
+            } catch (error) {
+                console.error("Login check failed:", error);
+                showLogin();
+            }
+        }
+
+        async function performLogin() {
+            const collegeCode = byId("loginCollegeCode").value.trim();
+            const username = byId("loginUsername").value.trim();
+            const password = byId("loginPassword").value;
+            const message = byId("loginMessage");
+            const button = byId("loginBtn");
+
+            message.textContent = "";
+
+            if (!collegeCode || !username || !password) {
+                message.textContent =
+                    "Please enter your college code, username and password.";
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = "Logging in...";
+
+            try {
+                const response = await fetch("/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        college_code: collegeCode,
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    message.textContent = data.message || "Login failed.";
+                    return;
+                }
+loggedInUser = {
+    ...data.user,
+    college_name: data.college?.name || data.user.college_name || ""
+};
+
+showApp();
+            } catch (error) {
+                console.error("Login error:", error);
+                message.textContent = "Could not connect to server.";
+            } finally {
+                button.disabled = false;
+                button.textContent = "Login";
+            }
+        }
+
+        async function performLogout() {
+            try {
+                await fetch("/logout", { method: "POST" });
+            } catch (error) {
+                console.error("Logout error:", error);
+            }
+
+            loggedInUser = null;
+            byId("loginPassword").value = "";
+            byId("loginMessage").textContent = "";
+            byId("adminPanel").style.display = "none";
+            showLogin();
+        }
+
+        // Login button and Enter key
+        byId("loginBtn").addEventListener("click", performLogin);
+
+        byId("loginPassword").addEventListener("keydown", event => {
+            if (event.key === "Enter") performLogin();
+        });
+
+        byId("loginUsername").addEventListener("keydown", event => {
+            if (event.key === "Enter") performLogin();
+        });
+
+        byId("logoutBtn").addEventListener("click", performLogout);
+
+        // College registration form visibility
+        byId("showRegistrationBtn").addEventListener("click", () => {
+            byId("collegeRegistrationForm").style.display = "block";
+            byId("registrationMessage").textContent = "";
+        });
+
+        byId("hideRegistrationBtn").addEventListener("click", () => {
+            byId("collegeRegistrationForm").style.display = "none";
+            byId("registrationMessage").textContent = "";
+        });
+
+        // Register a new college
+byId("registerCollegeBtn").addEventListener("click", async () => {
+    const name = byId("registerCollegeName").value.trim();
+    const code = byId("registerCollegeCode").value.trim().toUpperCase();
+    const username = byId("registerAdminUsername").value.trim();
+    const password = byId("registerAdminPassword").value;
+    const message = byId("registrationMessage");
+    const button = byId("registerCollegeBtn");
+
+    message.textContent = "";
+
+    if (!name || !code || !username || !password) {
+        message.textContent = "Please fill in all registration fields.";
+        return;
+    }
+
+    if (password.length < 8) {
+        message.textContent =
+            "The admin password must be at least 8 characters.";
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Creating...";
+
+    try {
+        const response = await fetch("/register-college", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                college_name: name,
+                college_code: code,
+                username: username,
+                password: password
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            message.textContent =
+                data.message || "Could not register the college.";
+            return;
+        }
+
+        message.textContent =
+            data.message || "College registered successfully.";
+
+        byId("loginCollegeCode").value = code;
+        byId("loginUsername").value = username;
+        byId("loginPassword").value = "";
+
+        byId("collegeRegistrationForm").style.display = "none";
+
+    } catch (error) {
+        console.error("College registration error:", error);
+        message.textContent = "Could not connect to server.";
+
+    } finally {
+        button.disabled = false;
+        button.textContent = "Create College";
+    }
+});
+        // Admin panel visibility
+        byId("adminPanelBtn").addEventListener("click", () => {
+            if (!loggedInUser || loggedInUser.role !== "admin") return;
+
+            const panel = byId("adminPanel");
+            panel.style.display =
+                panel.style.display === "block" ? "none" : "block";
+        });
+
+        byId("closeAdminPanel").addEventListener("click", () => {
+            byId("adminPanel").style.display = "none";
+        });
+
+        // Check whether a session already exists
+        checkLogin();
+    </script>
+
+    <!-- Keep the existing Room Finder scripts in this order -->
+    <script src="{{ url_for('static', filename='js/rooms.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/timetable-data.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/timetable.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+
+</body>
+</html>

@@ -1,0 +1,26 @@
+
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+
+.env
+.env.*
+!.env.example
+
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+*.log
+.DS_Store
+
+# Local maintenance scripts
+cleanup_colleges.py
+fix_demo_users.py
+repair_periods.py
+
+# Old backup of admin JavaScript
+admin.backup.js
